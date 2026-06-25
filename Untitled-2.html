@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WellSight — DS Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<style>
+:root{
+  --bg:#060D18;--s1:#0B1624;--s2:#0F1E30;--s3:#162540;
+  --cyan:#22D3EE;--cyan-dim:rgba(34,211,238,.08);--cyan-border:rgba(34,211,238,.22);
+  --amber:#F59E0B;--green:#34D399;--red:#F87171;--purple:#A78BFA;--blue:#60A5FA;
+  --text:#E2EEFF;--text2:#9DBAD6;--muted:#506880;
+  --border:rgba(255,255,255,.07);--border-hi:rgba(34,211,238,.22);
+  --fh:'Space Grotesk',sans-serif;--fb:'Inter',sans-serif;--fm:'JetBrains Mono',monospace;--r:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--fb);background:var(--bg);color:var(--text);font-size:12px;}
+.topbar{height:44px;flex-shrink:0;background:#04090F;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:10;}
+.wordmark{font-family:var(--fh);font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px;}
+.wdot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+.top-meta{display:flex;align-items:center;gap:10px;}
+.live-pill{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--green);}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.4s infinite;}
+.model-pill{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:var(--blue);background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.2);border-radius:5px;padding:3px 9px;cursor:pointer;}
+.ptag{font-size:10px;font-weight:600;color:var(--amber);letter-spacing:.04em;}
+#app{display:flex;height:calc(100vh - 44px);}
+#leftPane{width:192px;flex-shrink:0;background:var(--s1);border-right:2px solid var(--cyan-border);overflow-y:auto;display:flex;flex-direction:column;position:relative;}
+#leftPane::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,transparent 0,transparent 32px,rgba(34,211,238,.018) 32px,rgba(34,211,238,.018) 33px);pointer-events:none;z-index:0;}
+#leftPane>*{position:relative;z-index:1;}
+#leftPane::-webkit-scrollbar{width:2px;}
+#leftPane::-webkit-scrollbar-thumb{background:var(--cyan-border);}
+.lp-hd{padding:12px 14px 10px;border-bottom:1px solid var(--border);}
+.lp-hd h2{font-family:var(--fh);font-size:13px;font-weight:600;margin-bottom:3px;}
+.lp-hd h2 em{color:var(--cyan);font-style:normal;}
+.lp-hd p{font-size:10px;color:var(--text2);line-height:1.6;}
+.sect{padding:10px 14px;border-bottom:1px solid var(--border);}
+.st{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);opacity:.7;margin-bottom:8px;}
+.fg{display:flex;flex-direction:column;gap:3px;margin-bottom:7px;}
+.fg:last-child{margin-bottom:0;}
+.fg label{font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);}
+.fg input{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:5px;color:var(--text);font-family:var(--fb);font-size:11px;padding:6px 9px;outline:none;transition:border-color .15s;width:100%;}
+.fg input:focus{border-color:var(--cyan);}
+.sw{position:relative;width:100%;}
+.sw select{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:5px;color:var(--text);font-family:var(--fb);font-size:11px;padding:6px 26px 6px 9px;outline:none;appearance:none;width:100%;cursor:pointer;transition:border-color .15s;}
+.sw select:focus{border-color:var(--cyan);}
+.sw option{background:#0F1E30;}
+.sc{pointer-events:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);}
+.r2{display:flex;gap:6px;}
+.r2 .fg{flex:1;min-width:0;}
+.slb{margin-bottom:9px;}
+.slb:last-child{margin-bottom:0;}
+.slt{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.sln{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);}
+.slv{font-family:var(--fh);font-size:11px;font-weight:600;}
+.sltr{position:relative;height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-bottom:2px;}
+input[type=range]{position:absolute;inset:0;width:100%;height:3px;-webkit-appearance:none;appearance:none;background:transparent;outline:none;cursor:pointer;margin:0;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;cursor:pointer;margin-top:-5px;}
+.slf{position:absolute;left:0;top:0;height:3px;border-radius:2px;pointer-events:none;}
+.slrl{display:flex;justify-content:space-between;font-size:8px;color:var(--muted);}
+.qw{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);border-radius:6px;overflow:hidden;}
+.qhd{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(34,211,238,.05);}
+.qhdl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--cyan);}
+.qha{display:flex;gap:8px;}
+.qha button{background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;}
+.qc{font-family:var(--fm);font-size:9.5px;line-height:1.75;padding:7px 9px;color:#5A8AAC;}
+.qln{color:rgba(255,255,255,.12);margin-right:6px;user-select:none;}
+.qkw{color:var(--cyan);}.qstr{color:var(--amber);}.qfn{color:var(--purple);}
+.xb{display:flex;align-items:center;justify-content:center;gap:5px;padding:5px;border-top:1px solid rgba(255,255,255,.07);font-size:9px;font-weight:600;color:var(--cyan);cursor:pointer;background:rgba(34,211,238,.04);letter-spacing:.05em;text-transform:uppercase;}
+.xb:hover{background:rgba(34,211,238,.09);}
+.btn-an{margin:12px 14px 0;padding:11px;background:var(--cyan);color:#03111E;font-family:var(--fh);font-size:12px;font-weight:700;border:none;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;letter-spacing:.02em;transition:box-shadow .2s,transform .1s;}
+.btn-an:hover{box-shadow:0 6px 22px rgba(34,211,238,.38);transform:translateY(-1px);}
+.btn-an:active{transform:translateY(0);}
+.wfn{margin:8px 14px 14px;background:rgba(34,211,238,.05);border:1px solid var(--cyan-border);border-radius:6px;padding:8px 10px;font-size:9.5px;color:var(--text2);line-height:1.65;}
+.wfn b{color:var(--cyan);}
+#mainPane{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0;background:var(--bg);}
+#mainPane::-webkit-scrollbar{width:2px;}
+#mainPane::-webkit-scrollbar-thumb{background:var(--border);}
+.tbar{height:38px;flex-shrink:0;background:#04090F;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;}
+.ttab{padding:0 14px;height:38px;display:flex;align-items:center;font-size:11px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s;}
+.ttab.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+.syncbtn{margin-left:auto;background:rgba(34,211,238,.08);border:1px solid var(--cyan-border);border-radius:5px;padding:4px 10px;font-size:10px;font-weight:600;color:var(--cyan);cursor:pointer;}
+.mc{padding:10px;display:flex;flex-direction:column;gap:10px;}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:10px 13px;}
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;}
+.ct{font-family:var(--fh);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);}
+.lg{display:flex;gap:10px;flex-wrap:wrap;}
+.li{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);}
+.ll{width:10px;height:2px;border-radius:1px;display:inline-block;}
+.cc{font-size:10px;color:var(--text2);margin-top:7px;padding-top:7px;border-top:1px solid var(--border);line-height:1.6;}
+.cc b{color:var(--text);font-weight:600;}
+.br{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.dl{display:flex;flex-direction:column;gap:5px;}
+.dr{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:5px;}
+.dr.act{background:rgba(34,211,238,.07);border:1px solid rgba(34,211,238,.15);}
+.drl{font-size:10px;color:var(--text2);min-width:70px;}
+.drr{font-size:10px;color:var(--muted);margin-left:auto;}
+.ir{display:flex;align-items:center;gap:8px;padding:3px 0;}
+.il{font-size:10px;color:var(--text2);min-width:82px;}
+.itr{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.if{height:6px;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.ip{font-size:10px;font-weight:600;color:var(--text);min-width:30px;text-align:right;font-family:var(--fh);}
+#rightPane{width:258px;flex-shrink:0;background:var(--s1);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
+#rightPane::-webkit-scrollbar{width:2px;}
+#rightPane::-webkit-scrollbar-thumb{background:var(--border);}
+.rps{padding:10px 12px;border-bottom:1px solid var(--border);}
+.rpst{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);margin-bottom:8px;}
+.rptabs{display:flex;gap:5px;}
+.rptab{font-size:9px;font-weight:600;padding:3px 8px;border-radius:4px;cursor:pointer;color:var(--muted);border:1px solid transparent;letter-spacing:.04em;text-transform:uppercase;}
+.rptab.active{background:rgba(34,211,238,.08);border-color:var(--cyan-border);color:var(--cyan);}
+.lrow{display:flex;align-items:center;gap:4px;margin-bottom:6px;flex-wrap:wrap;}
+.ln{display:inline-flex;align-items:center;gap:3px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:3px 7px;font-size:9.5px;font-weight:500;white-space:nowrap;}
+.ln.t{border-color:rgba(52,211,153,.3);color:var(--green);}
+.ln.b{border-color:rgba(96,165,250,.3);color:var(--blue);}
+.ln.a{border-color:rgba(245,158,11,.3);color:var(--amber);}
+.ln.r{border-color:rgba(248,113,113,.3);color:var(--red);}
+.larr{color:var(--muted);font-size:10px;}
+.c3d{width:100%;border-radius:7px;overflow:hidden;background:var(--s2);position:relative;}
+.scleg{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
+.scl{display:flex;align-items:center;gap:4px;font-size:9.5px;color:var(--text2);}
+.scd{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.evg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px;}
+.evc{background:rgba(0,0,0,.3);border-radius:6px;padding:8px 10px;border:1px solid rgba(255,255,255,.06);}
+.evl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:3px;}
+.evv{font-family:var(--fh);font-size:18px;font-weight:700;color:var(--cyan);line-height:1;}
+.evu{font-size:10px;color:var(--muted);}
+.btn-rr{margin:10px 12px 12px;padding:10px;background:rgba(34,211,238,.07);border:1px solid var(--cyan-border);border-radius:7px;color:var(--cyan);font-family:var(--fh);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;letter-spacing:.02em;transition:background .15s;}
+.btn-rr:hover{background:rgba(34,211,238,.13);}
+.stag{display:inline-flex;align-items:center;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:4px;}
+.sc-stag{background:rgba(96,165,250,.12);color:var(--blue);}
+.sa-stag{background:rgba(245,158,11,.15);color:var(--amber);}
+#fsOverlay{display:none;position:fixed;inset:0;z-index:1000;background:rgba(3,8,16,.97);flex-direction:column;}
+#fsOverlay.open{display:flex;}
+#fshd{height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--border);}
+#fstitle{font-family:var(--fh);font-size:13px;font-weight:600;}
+#fscl{background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--text2);padding:5px 14px;cursor:pointer;font-size:11px;font-family:var(--fb);display:flex;align-items:center;gap:5px;}
+#fsca{flex:1;position:relative;}
+#fslg{padding:8px 18px;flex-shrink:0;display:flex;gap:18px;align-items:center;border-top:1px solid var(--border);font-size:10px;color:var(--text2);}
+.fade-up{opacity:0;transform:translateY(10px);transition:opacity .35s ease,transform .35s ease;}
+.fade-up.in{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="wordmark"><div class="wdot"></div>WellSight</div>
+  <div class="top-meta">
+    <div class="live-pill"><div class="live-dot"></div>Live Operations</div>
+    <div class="model-pill">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
+      ROP_model_v3.2
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <span class="ptag">Thomas Kiran · UX Portfolio</span>
+  </div>
+</div>
+
+<div id="fsOverlay">
+  <div id="fshd">
+    <div id="fstitle">3D Parameter Space — Pressure × Temperature × ROP</div>
+    <button id="fscl" onclick="closeFS()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Close
+    </button>
+  </div>
+  <div id="fsca"></div>
+  <div id="fslg">
+    <span style="font-weight:600;color:var(--text);">Drag to rotate · Scroll to zoom</span>
+    <div style="display:flex;align-items:center;gap:5px;"><div style="width:8px;height:8px;border-radius:50%;background:#22D3EE;"></div>Normal readings</div>
+    <div style="display:flex;align-items:center;gap:5px;"><div style="width:8px;height:8px;border-radius:50%;background:#F87171;"></div>Anomaly / outlier</div>
+    <div style="display:flex;align-items:center;gap:5px;"><div style="width:8px;height:8px;border-radius:50%;background:#F59E0B;"></div>Current operating point</div>
+  </div>
+</div>
+
+<div id="app">
+<!-- LEFT -->
+<div id="leftPane">
+  <div class="lp-hd">
+    <h2>Well <em>Parameters</em></h2>
+    <p>Enter inputs — the insight panel generates from these sensor values.</p>
+  </div>
+  <div class="sect">
+    <div class="st">Well Identity</div>
+    <div class="fg"><label>Well ID</label><input type="text" id="fWellId" value="DRL-2045"></div>
+    <div class="r2">
+      <div class="fg"><label>Formation</label><div class="sw"><select id="fFormation"><option>Sandstone</option><option>Limestone</option><option>Shale</option><option>Dolomite</option></select><div class="sc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#506880" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div></div></div>
+      <div class="fg"><label>Drill mode</label><div class="sw"><select id="fMode"><option>Rotary</option><option>Directional</option><option>Horizontal</option></select><div class="sc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#506880" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div></div></div>
+    </div>
+  </div>
+  <div class="sect">
+    <div class="st">Depth Configuration</div>
+    <div class="r2">
+      <div class="fg"><label>Target (ft)</label><input type="number" id="fDepth" value="12500"></div>
+      <div class="fg"><label>Current (ft)</label><input type="number" id="fCurrDepth" value="9000"></div>
+    </div>
+  </div>
+  <div class="sect">
+    <div class="st">Sensor Readings</div>
+    <div class="slb">
+      <div class="slt"><span class="sln">Standpipe Pressure (PSI)</span><span class="slv" id="lP" style="color:#22D3EE;">3,400</span></div>
+      <div class="sltr"><div class="slf" id="fP" style="width:32%;background:#22D3EE;"></div><input type="range" id="rP" min="1000" max="7500" value="3400" oninput="ss('rP','lP','fP',1000,7500)"></div>
+      <div class="slrl"><span>1,000</span><span>7,500</span></div>
+    </div>
+    <div class="slb">
+      <div class="slt"><span class="sln">Bottom-hole Temp (°F)</span><span class="slv" id="lT" style="color:#F59E0B;">285</span></div>
+      <div class="sltr"><div class="slf" id="fT" style="width:53%;background:#F59E0B;"></div><input type="range" id="rT" min="100" max="450" value="285" oninput="ss('rT','lT','fT',100,450)"></div>
+      <div class="slrl"><span>100</span><span>450</span></div>
+    </div>
+    <div class="slb">
+      <div class="slt"><span class="sln">Rotary Speed (RPM)</span><span class="slv" id="lR" style="color:#C084FC;">120</span></div>
+      <div class="sltr"><div class="slf" id="fR" style="width:38%;background:#C084FC;"></div><input type="range" id="rR" min="40" max="250" value="120" oninput="ss('rR','lR','fR',40,250)"></div>
+      <div class="slrl"><span>40</span><span>250</span></div>
+    </div>
+    <div class="slb">
+      <div class="slt"><span class="sln">Weight on Bit (klbf)</span><span class="slv" id="lW" style="color:#34D399;">28</span></div>
+      <div class="sltr"><div class="slf" id="fW" style="width:56%;background:#34D399;"></div><input type="range" id="rW" min="0" max="50" value="28" oninput="ss('rW','lW','fW',0,50)"></div>
+      <div class="slrl"><span>0</span><span>50</span></div>
+    </div>
+  </div>
+  <div class="sect">
+    <div class="st">Python / SQL Query</div>
+    <div class="qw">
+      <div class="qhd">
+        <span class="qhdl">Write and run</span>
+        <div class="qha">
+          <button title="Run" onclick="analyzeWell()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+          <button title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#506880" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        </div>
+      </div>
+      <div class="qc">
+        <div><span class="qln">1</span><span class="qkw">from</span> well_data_sdk <span class="qkw">import</span> *</div>
+        <div><span class="qln">2</span><span class="qkw">from</span> well_data_sdk <span class="qkw">as</span> ws</div>
+        <div><span class="qln">3</span>&nbsp;</div>
+        <div><span class="qln">4</span><span class="qkw">def</span> e = <span class="qfn">result_endelf</span>(</div>
+        <div><span class="qln">5</span>&nbsp;&nbsp;well_data_sdk_te9),</div>
+        <div><span class="qln">6</span>&nbsp;&nbsp;<span class="qstr">'ROP_ss'</span>,</div>
+        <div><span class="qln">7</span>&nbsp;&nbsp;BIT_wear = <span class="qstr">'ROP_ss'</span></div>
+        <div><span class="qln">8</span>qnt = well_data()</div>
+      </div>
+      <div class="xb" onclick="analyzeWell()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>Execute</div>
+    </div>
+  </div>
+  <div class="btn-an" onclick="analyzeWell()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Analyse Well Performance
+  </div>
+  <div class="wfn"><b>Workflow note —</b> The form stays visible so you can tweak values and re-analyse without leaving the page.</div>
+</div>
+
+<!-- MAIN -->
+<div id="mainPane">
+  <div class="tbar">
+    <div class="ttab active">Track 1</div>
+    <div class="ttab">Track</div>
+    <div class="ttab">Synclh Track</div>
+    <div class="syncbtn">Synchronized chart</div>
+  </div>
+  <div class="mc" id="mainContent" style="display:none;">
+    <div class="card fade-up" id="c1">
+      <div class="ch">
+        <span class="ct">1: Predicted ROP vs Actual ROP <span style="font-size:9px;font-weight:400;opacity:.6;">(prediction interval)</span></span>
+        <div class="lg">
+          <div class="li"><span class="ll" style="background:#60A5FA;"></span>Prediction interval</div>
+          <div class="li"><span class="ll" style="background:none;border-bottom:2px dashed #F87171;"></span>Actual ROP</div>
+        </div>
+      </div>
+      <canvas id="ropChart" height="108"></canvas>
+      <div class="cc" id="ropCap"></div>
+    </div>
+    <div class="card fade-up" id="c2">
+      <div class="ch">
+        <span class="ct">Track 2: Standpipe Pressure &amp; Bottom-hole Temp</span>
+        <div class="lg">
+          <div class="li"><span class="ll" style="background:#22D3EE;"></span>Pressure</div>
+          <div class="li"><span class="ll" style="background:#F59E0B;"></span>BHT</div>
+        </div>
+      </div>
+      <canvas id="presChart" height="88"></canvas>
+    </div>
+    <div class="br fade-up" id="c3">
+      <div class="card">
+        <div class="ch"><span class="ct">Depth Profile</span><span class="stag sc-stag" id="dtag">— ft</span></div>
+        <div class="dl" id="depthLayers"></div>
+        <div class="cc" id="depthCap"></div>
+      </div>
+      <div class="card">
+        <div class="ch"><span class="ct">Parameter Influence</span><span class="stag sa-stag">Ranked</span></div>
+        <div id="infRows" style="margin-top:4px;"></div>
+      </div>
+    </div>
+  </div>
+  <div id="emptyMain" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:40px;">
+    <div style="width:52px;height:52px;border-radius:50%;border:2px dashed rgba(34,211,238,.2);display:flex;align-items:center;justify-content:center;opacity:.5;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <div style="font-size:12px;color:var(--muted);max-width:210px;line-height:1.7;">Enter well parameters and click <strong style="color:var(--text);">Analyse</strong> to generate the insights workspace.</div>
+  </div>
+</div>
+
+<!-- RIGHT -->
+<div id="rightPane">
+  <div class="rps">
+    <div style="font-family:var(--fh);font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">Feature Lineage &amp; Transformations</div>
+    <div class="rptabs"><span class="rptab active">Raw sensor inputs</span><span class="rptab">Graph ML</span></div>
+  </div>
+  <div class="rps">
+    <div class="rpst">Lineage graph</div>
+    <div class="lrow"><div class="ln t">WOB Raw</div><span class="larr">→</span><div class="ln">Transform</div></div>
+    <div class="lrow"><div class="ln b">Pressure</div><span class="larr">→</span><div class="ln">Feature vector</div><span class="larr">→</span><div class="ln a">ROP_model_v3</div></div>
+    <div class="lrow"><div class="ln t">WOB</div><span class="larr">→</span><div class="ln">Feature vector</div><span class="larr">→</span><div class="ln r">Bit_wear_v1</div></div>
+    <div class="lrow"><div class="ln b">Prsidcht</div><span class="larr">→</span><span style="font-size:10px;color:var(--muted);">RPM</span></div>
+  </div>
+  <div class="rps">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+      <div class="rpst" style="margin-bottom:0;">3D Parameter Space</div>
+      <button onclick="openFS()" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:9px;font-weight:600;color:var(--cyan);letter-spacing:.04em;text-transform:uppercase;">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>Full screen
+      </button>
+    </div>
+    <div class="c3d" id="scatter3dWrap" style="height:164px;"></div>
+    <div class="scleg">
+      <div class="scl"><div class="scd" style="background:#22D3EE;"></div>ROP</div>
+      <div class="scl"><div class="scd" style="background:#F87171;"></div>Fail outlier</div>
+      <div class="scl"><div class="scd" style="background:#F59E0B;"></div>Risk</div>
+    </div>
+    <div class="cc" id="scatterCap" style="margin-top:6px;"></div>
+  </div>
+  <div class="rps">
+    <div class="rpst">Model Evaluation</div>
+    <div class="evg">
+      <div class="evc"><div class="evl">RMSE</div><div class="evv" id="evR">—</div></div>
+      <div class="evc"><div class="evl">MAPE</div><div class="evv" id="evM">—</div></div>
+    </div>
+    <canvas id="evalChart" height="58"></canvas>
+  </div>
+  <div class="btn-rr" onclick="analyzeWell()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    Re-run model inference &amp; validate
+  </div>
+</div>
+</div>
+
+<script>
+function ss(iid,lid,fid,mn,mx){
+  const v=+document.getElementById(iid).value;
+  document.getElementById(lid).textContent=v.toLocaleString();
+  document.getElementById(fid).style.width=((v-mn)/(mx-mn)*100)+'%';
+}
+function rf(){
+  return{
+    wellId:document.getElementById('fWellId').value||'DRL-2045',
+    formation:document.getElementById('fFormation').value,
+    mode:document.getElementById('fMode').value,
+    td:+document.getElementById('fDepth').value||12500,
+    cd:+document.getElementById('fCurrDepth').value||9000,
+    pressure:+document.getElementById('rP').value||3400,
+    temp:+document.getElementById('rT').value||285,
+    rpm:+document.getElementById('rR').value||120,
+    wob:+document.getElementById('rW').value||28,
+  };
+}
+function derive(f){
+  const comp=Math.round(f.cd/f.td*100);
+  const rop=Math.max(8,Math.round(f.rpm*.29+(f.pressure/7500)*18-(f.temp/450)*5));
+  const bh=Math.max(30,Math.round(100-(f.temp/450)*24-(f.cd/f.td)*18));
+  const rs=Math.round((f.pressure/7500)*33+(f.temp/450)*28-(bh*.18)+8);
+  const sc3d=Array.from({length:80},(_,i)=>({
+    x:f.pressure+(Math.random()-.5)*f.pressure*.3,
+    y:f.temp+(Math.random()-.5)*f.temp*.25,
+    z:rop+(Math.random()-.5)*rop*.4,
+    type:i<5?'outlier':i<12?'current':'normal',
+  }));
+  const feats=[
+    {label:'Pressure',pct:88,color:'#22D3EE'},
+    {label:'WOB',pct:58,color:'#F59E0B'},
+    {label:'Temperature',pct:40,color:'#34D399'},
+    {label:'RPM',pct:30,color:'#C084FC'},
+    {label:'Bit condition',pct:18,color:'#F87171'},
+  ];
+  const outliers=sc3d.filter(p=>p.type==='outlier').length;
+  return{comp,rop,bh,rs,sc3d,feats,outliers,
+    rmse:(2.5+Math.random()*.8).toFixed(3),
+    mape:(9+Math.random()*5).toFixed(2)};
+}
+const cDef={
+  plugins:{legend:{display:false},tooltip:{backgroundColor:'#0B1624',borderColor:'rgba(34,211,238,.25)',borderWidth:1,titleColor:'#E2EEFF',bodyColor:'#9DBAD6',padding:10,cornerRadius:6}},
+  scales:{
+    x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#506880',font:{family:'Inter',size:10}}},
+    y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#506880',font:{family:'Inter',size:10}}},
+  }
+};
+let cRop=null,cPres=null,cEval=null;
+function buildRop(f,ins){
+  if(cRop)cRop.destroy();
+  const lbs=Array.from({length:25},(_,i)=>i%4===0?i+'h':'');
+  const b=ins.rop;
+  const pred=lbs.map((_,i)=>+(b*(.9+Math.sin(i*.5)*.08+(Math.random()-.5)*.05)).toFixed(1));
+  const act=lbs.map((_,i)=>i===14?b*.62:+(b*(.85+Math.sin(i*.6)*.1+(Math.random()-.5)*.08)).toFixed(1));
+  cRop=new Chart(document.getElementById('ropChart'),{type:'line',data:{labels:lbs,datasets:[
+    {label:'Upper',data:pred.map(v=>+(v*1.12).toFixed(1)),borderColor:'transparent',backgroundColor:'rgba(96,165,250,.1)',fill:'+1',pointRadius:0,tension:.4},
+    {label:'Lower',data:pred.map(v=>+(v*.88).toFixed(1)),borderColor:'transparent',backgroundColor:'rgba(96,165,250,.1)',fill:false,pointRadius:0,tension:.4},
+    {label:'Predicted',data:pred,borderColor:'#60A5FA',borderWidth:2,pointRadius:0,tension:.4,fill:false},
+    {label:'Actual',data:act,borderColor:'#F87171',borderWidth:1.5,pointRadius:(ctx)=>ctx.dataIndex===14?5:0,pointBackgroundColor:'#F87171',borderDash:[5,3],tension:.4,fill:false},
+  ]},options:{...cDef,animation:{duration:700}}});
+  document.getElementById('ropCap').innerHTML='<b>At 14:02:</b> ROP prediction error spiked (Diff: 5.2 ft/h). Correlated with pressure drop.';
+}
+function buildPres(f){
+  if(cPres)cPres.destroy();
+  const lbs=Array.from({length:25},(_,i)=>i%4===0?i+'h':'');
+  const pr=lbs.map((_,i)=>+(f.pressure*(.9+Math.sin(i*.6)*.07+(Math.random()-.5)*.04)).toFixed(0));
+  const bt=lbs.map((_,i)=>+(f.temp*(.93+Math.cos(i*.5)*.04+(Math.random()-.5)*.03)).toFixed(0));
+  pr[14]=Math.round(f.pressure*.6);
+  cPres=new Chart(document.getElementById('presChart'),{type:'line',data:{labels:lbs,datasets:[
+    {label:'Pressure',data:pr,borderColor:'#22D3EE',backgroundColor:'rgba(34,211,238,.07)',borderWidth:2,pointRadius:0,tension:.4,fill:true},
+    {label:'BHT',data:bt,borderColor:'#F59E0B',borderWidth:1.5,pointRadius:0,tension:.4},
+  ]},options:{...cDef,animation:{duration:700}}});
+}
+function buildEval(){
+  if(cEval)cEval.destroy();
+  cEval=new Chart(document.getElementById('evalChart'),{type:'line',data:{
+    labels:['Wk 1','Wk 2','Wk 3','Wk 4'],
+    datasets:[
+      {label:'Actual',data:[2.1,2.45,2.68,3.05],borderColor:'#22D3EE',borderWidth:2,pointBackgroundColor:'#22D3EE',pointRadius:4,tension:.4},
+      {label:'Predicted',data:[2.15,2.4,2.72,2.98],borderColor:'#F59E0B',borderWidth:1.5,pointRadius:3,borderDash:[4,3],tension:.4},
+    ]},options:{...cDef,animation:{duration:700}}});
+}
+function buildDepth(f,ins){
+  document.getElementById('dtag').textContent=f.cd.toLocaleString()+' ft';
+  const layers=[
+    {l:'Overburden',r:'0–3k',w:'85%',c:'rgba(34,211,238,.28)',act:false},
+    {l:'Reservoir',r:'3–6k',w:'62%',c:'rgba(96,165,250,.45)',act:false},
+    {l:'Target zone',r:'6–8.6k',w:'44%',c:'#22D3EE',act:true},
+    {l:'Deep',r:'8.6–12k',w:'20%',c:'rgba(255,255,255,.14)',act:false},
+  ];
+  document.getElementById('depthLayers').innerHTML=layers.map(d=>`
+    <div class="dr${d.act?' act':''}">
+      <span class="drl" style="${d.act?'color:var(--cyan);font-weight:600;':''}">${d.l}</span>
+      <div style="flex:1;height:7px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;">
+        <div style="width:${d.w};height:7px;background:${d.c};border-radius:3px;"></div>
+      </div>
+      <span class="drr">${d.r}</span>
+    </div>
+  `).join('');
+  document.getElementById('depthCap').innerHTML=`Well is <b>${ins.comp}% complete</b> — ${(f.td-f.cd).toLocaleString()} ft remaining in ${f.formation}.`;
+}
+function buildInf(feats){
+  document.getElementById('infRows').innerHTML=feats.map(f=>`
+    <div class="ir"><span class="il">${f.label}</span><div class="itr"><div class="if" style="width:0%;background:${f.color};" data-p="${f.pct}"></div></div><span class="ip">${f.pct}%</span></div>
+  `).join('');
+  setTimeout(()=>document.querySelectorAll('.if').forEach(el=>el.style.width=el.dataset.p+'%'),80);
+}
+
+let r3d=null,r3dFS=null,lastPts=[];
+function make3D(pts,wrap,H){
+  wrap.innerHTML='';
+  const W=wrap.clientWidth||240;
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(W,H);
+  renderer.setClearColor(0x0F1E30,1);
+  wrap.appendChild(renderer.domElement);
+  const scene=new THREE.Scene();
+  const cam=new THREE.PerspectiveCamera(45,W/H,.1,1000);
+  cam.position.set(3,2.2,3.5);cam.lookAt(0,0,0);
+  scene.add(new THREE.GridHelper(4,8,0x1A2840,0x1A2840));
+  const aM=new THREE.LineBasicMaterial({color:0x1E3050});
+  [[[-2,0,0],[2,0,0]],[[0,-2,0],[0,2,0]],[[0,0,-2],[0,0,2]]].forEach(([a,b])=>{
+    const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a),new THREE.Vector3(...b)]);
+    scene.add(new THREE.Line(g,aM));
+  });
+  const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),zs=pts.map(p=>p.z);
+  const norm=(v,arr)=>(v-Math.min(...arr))/(Math.max(...arr)-Math.min(...arr)||1)*3-1.5;
+  const cm={normal:0x22D3EE,outlier:0xF87171,current:0xF59E0B};
+  const em={normal:0x0a3f4f,outlier:0x7a1010,current:0x5c3a00};
+  pts.forEach(p=>{
+    const sz=p.type==='current'?.09:.055;
+    const mesh=new THREE.Mesh(new THREE.SphereGeometry(sz,10,10),new THREE.MeshPhongMaterial({color:cm[p.type],emissive:em[p.type],shininess:90}));
+    mesh.position.set(norm(p.x,xs),norm(p.z,zs),norm(p.y,ys));
+    scene.add(mesh);
+  });
+  scene.add(new THREE.AmbientLight(0x334466,1.2));
+  const dL=new THREE.DirectionalLight(0x22D3EE,1.5);dL.position.set(3,5,3);scene.add(dL);
+  const pivot=new THREE.Group();[...scene.children].forEach(c=>pivot.add(c));scene.add(pivot);
+  let dr=false,lx=0,ly=0,rx=0,ry=0;
+  renderer.domElement.addEventListener('mousedown',e=>{dr=true;lx=e.clientX;ly=e.clientY;e.preventDefault();},{passive:false});
+  window.addEventListener('mouseup',()=>dr=false);
+  window.addEventListener('mousemove',e=>{if(!dr)return;ry+=(e.clientX-lx)*.012;rx+=(e.clientY-ly)*.005;lx=e.clientX;ly=e.clientY;});
+  const h={stop:false};
+  (function anim(){
+    if(h.stop){renderer.dispose();return;}
+    requestAnimationFrame(anim);
+    if(!dr)ry+=.004;
+    pivot.rotation.y=ry;pivot.rotation.x=rx*.4;
+    renderer.render(scene,cam);
+  })();
+  return h;
+}
+function openFS(){
+  document.getElementById('fsOverlay').classList.add('open');
+  if(r3dFS)r3dFS.stop=true;
+  setTimeout(()=>{r3dFS=make3D(lastPts,document.getElementById('fsca'),window.innerHeight-94);},50);
+}
+function closeFS(){
+  document.getElementById('fsOverlay').classList.remove('open');
+  if(r3dFS){r3dFS.stop=true;r3dFS=null;}
+}
+function fadeIn(ids){ids.forEach((id,i)=>{const el=document.getElementById(id);if(!el)return;el.classList.remove('in');setTimeout(()=>el.classList.add('in'),i*100+30);});}
+
+function analyzeWell(){
+  const f=rf(),ins=derive(f);
+  lastPts=ins.sc3d;
+  document.getElementById('emptyMain').style.display='none';
+  document.getElementById('mainContent').style.display='flex';
+  buildRop(f,ins);
+  buildPres(f);
+  buildEval();
+  buildDepth(f,ins);
+  buildInf(ins.feats);
+  document.getElementById('evR').textContent=ins.rmse;
+  document.getElementById('evM').innerHTML=ins.mape+'<span class="evu">%</span>';
+  document.getElementById('scatterCap').innerHTML=`Each point is a sensor reading in 3D space. <b style="color:#F87171;">Red outliers</b> (${ins.outliers} readings) fall outside the normal envelope.`;
+  setTimeout(()=>{if(r3d)r3d.stop=true;r3d=make3D(ins.sc3d,document.getElementById('scatter3dWrap'),164);},80);
+  fadeIn(['c1','c2','c3']);
+}
+</script>
+</body>
+</html>
